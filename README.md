@@ -50,10 +50,10 @@ Each visualization was chosen based on the type of relationship in the data, not
 
 | Chart | Used For | Why |
 |---|---|---|
-| Bar (horizontal) | Churn by Contract, Tenure Bucket, Services, Payment Method | Comparing discrete, unordered categories — bar charts let viewers judge relative magnitude accurately across groups |
-| Line | Retention by Tenure | Tenure is continuous and sequential — a line reveals the *rate of change* in retention over time, which a bar chart would flatten and hide |
-| Donut | Overall Churn Split | A simple two-way part-to-whole split; a donut communicates "proportion of a whole" faster than a two-bar comparison |
-| Big number tile | MRR at Risk | A single critical fact needs no visual encoding — clarity over decoration |
+| Bar (horizontal) | Churn by Contract, Tenure Bucket, Services, Payment Method | Comparing discrete, unordered categories - bar charts let viewers judge relative magnitude accurately across groups |
+| Line | Retention by Tenure | Tenure is continuous and sequential - a line reveals the rate of change in retention over time, which a bar chart would flatten and hide |
+| Pie | Overall Churn | A simple two-way part-to-whole split; a pie chart communicates "proportion of a whole" faster than a two-bar comparison |
+| Big number tile | MRR at Risk, Pct MRR at Risk | A single critical fact needs no visual encoding - clarity over decoration |
 | Table | High-Value At-Risk Customers | Individual records with mixed attribute types (ID, tenure, contract, charge) — a table preserves every attribute without forcing a false chart reduction |
 
 ---

@@ -35,6 +35,7 @@ Source: [Kaggle — Telco Customer Churn](https://www.kaggle.com/datasets/blastc
 - **Missing add-on services correlate with churn:** Customers without Tech Support churn at 41.64% vs. 15.17% with it (similar pattern for Online Security and Device Protection)
 - **Payment method signals risk:** Electronic check payers show the highest churn rate at 45.29%, notably higher than automatic payment methods
 - **20 high-value customers** above average monthly spend churned in this dataset — see `sql/04_at_risk_customers.sql` (query) and `exports/high_value_at_risk.csv` (results)
+- **Internet service type is a strong signal:** Fiber optic customers churn at 41.89% vs. 18.96% for DSL and just 7.4% for customers with no internet service — this is the model's single strongest churn-driving factor, and a clear candidate for retention investigation (e.g., service reliability, pricing, or bundling issues specific to fiber plans).
 
 ---
 
@@ -63,6 +64,7 @@ Each visualization was chosen based on the type of relationship in the data, not
 - **Python** (pandas, scikit-learn) — data cleaning and churn prediction model
 - **SQLite** — data storage and querying
 - **Tableau Public** — dashboard and visualization
+- **[LLM provider — e.g. Google AI Studio / Groq]** — AI-generated risk explanations and retention recommendations
 
 ## Project Structure
 
@@ -76,14 +78,46 @@ Each visualization was chosen based on the type of relationship in the data, not
 ├── dashboard/            # Tableau workbook + screenshot
 │   ├── churn_dashboard.twbx
 │   └── screenshot.png
+├── model/                # Trained model artifact
+│   └── churn_model.pkl
 ├── docs/                 # BRD
+│   └── BRD.md
 ├── main.py               # Data cleaning & import into SQLite
+├── train_model.py        # Churn prediction model training and evaluation
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Churn Prediction Model — [TODO]
-To fill in once built: model type used, train/test split, accuracy/precision/recall, 
-top 5 feature importances, and a one-line business interpretation of the top driver.
+## Churn Prediction Model
+
+A logistic regression model was trained to predict churn probability for each customer, using contract type, tenure, billing, and service-usage features. Logistic regression was chosen specifically for its interpretability - its coefficients directly show which factors increase or decrease churn risk, which the AI explanation layer relies on.
+
+Data preparation:
+- Categorical fields one-hot encoded (`drop_first=True` to avoid redundant columns)
+- Numeric fields (`tenure`, `MonthlyCharges`, `TotalCharges`) standardized using `StandardScaler`, fit on the training set only to avoid data leakage into the test set
+- 80/20 train/test split (`random_state=42` for reproducibility)
+
+Performance (on held-out test data):
+- Accuracy: 82.1%
+- Precision: 68.6%
+- Recall: 59.8%
+- Confusion Matrix: `[[934, 102], [150, 223]]`
+
+Top churn-driving factors: Fiber optic internet service, Total Charges, Streaming Movies subscription, Paperless Billing, Electronic Check payment method
+
+Top churn-preventing factors: Two-year contract, longer tenure, one-year contract, active phone service, Online Security subscription
+
+These findings are broadly consistent with the SQL-based segmentation analysis above, reinforcing that the model is learning genuine patterns rather than noise. One new finding surfaced by the model - Fiber optic internet service as a top churn driver - led to an additional SQL query (`sql/02_segmentation.sql`) to validate and explain it with real segmentation data.
+
+## Limitations
+
+- Retention-by-tenure is a proxy metric — the dataset has no signup date, so this groups customers by *how long they've been a customer so far* rather than a true monthly cohort curve.
+- Built on a public dataset, not live company data.
+- Churn prediction model is intentionally kept simple and interpretable (logistic regression) rather than a higher-accuracy black-box model, to support the AI explanation layer.
+- Some engineered/raw features (`tenure`, `MonthlyCharges`, `TotalCharges`) are correlated with one another (`TotalCharges` ≈ `tenure` × `MonthlyCharges`), a form of multicollinearity that can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
+- The model currently misses roughly 40% of customers who actually churn (recall of 59.8%) — meaning a real deployment would need either a lower decision threshold or a more sensitive model if minimizing missed at-risk customers is the priority over minimizing false alarms.
+
+## AI-Generated Retention Recommendations — [TODO]
+Example input/output — a sample customer, their risk explanation, and the recommended action.

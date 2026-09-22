@@ -1,10 +1,17 @@
 # Business Requirements Document (BRD)
 ## SaaS Churn Prediction & AI-Driven Retention System
 
-**Document version:** 1.0
+**Document version:** 1.1
 **Author:** Syeda Misbah Hussain
 **Date:** 09/16/2026
 **Status:** Draft
+
+## Revision History
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0 | 09/17/2026 | Initial draft — business problem, objectives, scope, and requirements defined |
+| 1.1 | 09/22/2026 | Confirmed FR-04, FR-05, and NFR-01 against the churn prediction model actually built (logistic regression, standardized numeric features, 80/20 train/test split). Added the model's recall limitation to the Risks table. |
 
 ---
 
@@ -50,37 +57,39 @@ Build a system that proactively identifies at-risk customers, quantifies the rev
 
 - No signup/join date is available in the dataset, so true cohort-based retention analysis (tracking a specific monthly cohort over time) is not possible. Tenure-based retention is used as a proxy instead.
 - The predictive model must remain interpretable (e.g., logistic regression or decision tree) rather than a high-complexity black-box model, so that its outputs can be explained in plain language to a business stakeholder.
+- Numeric features used by the model (tenure, monthly charges, total charges) are correlated with one another, which can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
 
 ## 7. Functional Requirements
 
-| ID | Requirement |
-|---|---|
-| FR-01 | The system shall calculate the overall customer churn rate. |
-| FR-02 | The system shall calculate monthly recurring revenue (MRR) and the portion of MRR attributable to churned customers. |
-| FR-03 | The system shall segment churn rate by contract type, tenure, add-on services, and payment method. |
-| FR-04 | The system shall predict a churn probability score for each active customer. |
-| FR-05 | The system shall identify the top factors contributing to each customer's predicted churn risk. |
-| FR-06 | The system shall generate a plain-English explanation of each at-risk customer's risk factors, using an AI language model. |
-| FR-07 | The system shall generate a recommended retention action for each at-risk customer, using an AI language model. |
-| FR-08 | The system shall present churn KPIs, segmentation breakdowns, and at-risk customers in an interactive dashboard. |
-| FR-09 | The dashboard shall allow filtering of results by at least one dimension (e.g., contract type). |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-01 | The system shall calculate the overall customer churn rate. | Implemented |
+| FR-02 | The system shall calculate monthly recurring revenue (MRR) and the portion of MRR attributable to churned customers. | Implemented |
+| FR-03 | The system shall segment churn rate by contract type, tenure, add-on services, and payment method. | Implemented |
+| FR-04 | The system shall predict a churn probability score for each active customer. | Implemented — logistic regression model, evaluated on held-out test data |
+| FR-05 | The system shall identify the top factors contributing to each customer's predicted churn risk. | Implemented — model coefficients extracted and cross-checked against SQL segmentation findings |
+| FR-06 | The system shall generate a plain-English explanation of each at-risk customer's risk factors, using an AI language model. | Planned |
+| FR-07 | The system shall generate a recommended retention action for each at-risk customer, using an AI language model. | Planned |
+| FR-08 | The system shall present churn KPIs, segmentation breakdowns, and at-risk customers in an interactive dashboard. | Implemented |
+| FR-09 | The dashboard shall allow filtering of results by at least one dimension (e.g., contract type). | Implemented |
 
 ## 8. Non-Functional Requirements
 
-| ID | Requirement |
-|---|---|
-| NFR-01 | The churn prediction model shall be interpretable (e.g., logistic regression or decision tree), with feature importances or coefficients available for explanation. | Directly discussed: an interpretable model is required so the Day 5 AI layer can explain *why* a customer was flagged, rather than working against a black box. |
+| ID | Requirement | Source |
+|---|---|---|
+| NFR-01 | The churn prediction model shall be interpretable (e.g., logistic regression or decision tree), with feature importances or coefficients available for explanation. | Directly discussed: an interpretable model is required so the AI explanation layer can explain *why* a customer was flagged, rather than working against a black box. Confirmed against the actual model built: a logistic regression model with extracted, ranked coefficients. |
 | NFR-02 | Dashboard visuals shall be understandable by a non-technical business stakeholder (e.g., a Customer Success Manager) without requiring knowledge of the underlying SQL or data model. | Directly discussed: the dashboard's stated purpose throughout was to be usable by a business stakeholder, not just a technical audience — this was the reasoning behind every chart-type decision (Chart Selection Rationale). |
-| NFR-03 | AI-generated explanations and retention recommendations shall be grounded in the model's actual feature importances or the customer's real data fields, and shall not fabricate reasons unsupported by the data. | Directly discussed: the plan to feed each customer's real risk score and top contributing factors into the LLM (Day 5), rather than open-ended generation, specifically to avoid hallucinated explanations. |
+| NFR-03 | AI-generated explanations and retention recommendations shall be grounded in the model's actual feature importances or the customer's real data fields, and shall not fabricate reasons unsupported by the data. | Directly discussed: the plan to feed each customer's real risk score and top contributing factors into the LLM, rather than open-ended generation, specifically to avoid hallucinated explanations. |
 | NFR-04 | Customer data used in this project shall come only from a public, non-sensitive dataset; no real customer PII shall be used. | Directly discussed: the dataset disclosure and honesty requirement — being upfront that this is the public Telco Customer Churn dataset used as a SaaS proxy. |
 
 ## 9. Key Performance Indicators (KPIs)
 
 - Overall churn rate (%)
 - Monthly recurring revenue (MRR) at risk ($ and % of total)
-- Churn rate by contract type, tenure bucket, add-on service, and payment method
+- Churn rate by contract type, tenure bucket, add-on service, payment method, and internet service type
 - Retention rate by tenure (proxy cohort view)
 - Number and value of high-priority at-risk accounts identified
+- Model performance: accuracy, precision, and recall on held-out test data
 
 ## 10. User Stories
 
@@ -108,3 +117,4 @@ This project will be considered successful if it:
 | Retention-by-tenure is a proxy metric, not true cohort analysis, due to missing signup dates | Document this limitation explicitly in project documentation and avoid overstating its precision |
 | AI-generated explanations could hallucinate reasons not supported by the data | Ground each explanation in the model's actual feature importances for that customer, rather than open-ended generation |
 | Dataset is public and widely used, reducing novelty | Differentiate through the business framing, AI recommendation layer, and business case, rather than the dataset itself |
+| The churn model, as trained, misses roughly 40% of customers who actually churn (recall of 59.8% on held-out test data) | Document this trade-off explicitly; a production deployment prioritizing recall over precision could lower the model's decision threshold, at the cost of more false alarms |

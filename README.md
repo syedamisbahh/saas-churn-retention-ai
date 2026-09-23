@@ -64,7 +64,7 @@ Each visualization was chosen based on the type of relationship in the data, not
 - **Python** (pandas, scikit-learn) — data cleaning and churn prediction model
 - **SQLite** — data storage and querying
 - **Tableau Public** — dashboard and visualization
-- **[LLM provider — e.g. Google AI Studio / Groq]** — AI-generated risk explanations and retention recommendations
+- **Groq API** (`openai/gpt-oss-20b`) — AI-generated risk explanations and retention recommendations
 
 ## Project Structure
 
@@ -75,6 +75,9 @@ Each visualization was chosen based on the type of relationship in the data, not
 │   ├── 03_cohort_retention.sql
 │   └── 04_at_risk_customers.sql
 ├── exports/              # CSV outputs feeding the dashboard
+│   ├── churn_scores.csv
+│   ├── high_value_at_risk.csv
+│   └── ai_retention_recommendations.csv
 ├── dashboard/            # Tableau workbook + screenshot
 │   ├── churn_dashboard.twbx
 │   └── screenshot.png
@@ -84,6 +87,8 @@ Each visualization was chosen based on the type of relationship in the data, not
 │   └── BRD.md
 ├── main.py               # Data cleaning & import into SQLite
 ├── train_model.py        # Churn prediction model training and evaluation
+├── generate_recommendations.py  # AI-generated risk explanations and retention actions
+├── .env                  # API key storage (not committed — see .gitignore)
 ├── requirements.txt
 └── README.md
 ```
@@ -111,6 +116,10 @@ Top churn-preventing factors: Two-year contract, longer tenure, one-year contrac
 
 These findings are broadly consistent with the SQL-based segmentation analysis above, reinforcing that the model is learning genuine patterns rather than noise. One new finding surfaced by the model - Fiber optic internet service as a top churn driver - led to an additional SQL query (`sql/02_segmentation.sql`) to validate and explain it with real segmentation data.
 
+## AI-Generated Retention Recommendations
+
+For each of the top 10 highest-risk active customers (by predicted churn probability), a language model (Groq, `openai/gpt-oss-20b`) generates a plain-English explanation and one specific retention action — grounded strictly in that customer's real data fields, not open-ended generation. The prompt explicitly constrains the model to avoid inventing information and to reference the underlying churn model's top driver (Fiber optic internet service) when applicable, which reduces the risk of generic or hallucinated output.
+
 ## Limitations
 
 - Retention-by-tenure is a proxy metric — the dataset has no signup date, so this groups customers by *how long they've been a customer so far* rather than a true monthly cohort curve.
@@ -118,6 +127,20 @@ These findings are broadly consistent with the SQL-based segmentation analysis a
 - Churn prediction model is intentionally kept simple and interpretable (logistic regression) rather than a higher-accuracy black-box model, to support the AI explanation layer.
 - Some engineered/raw features (`tenure`, `MonthlyCharges`, `TotalCharges`) are correlated with one another (`TotalCharges` ≈ `tenure` × `MonthlyCharges`), a form of multicollinearity that can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
 - The model currently misses roughly 40% of customers who actually churn (recall of 59.8%) — meaning a real deployment would need either a lower decision threshold or a more sensitive model if minimizing missed at-risk customers is the priority over minimizing false alarms.
+- AI-generated explanations, while grounded in real customer data through prompt constraints, were still manually spot-checked against the database before use - a production deployment would need an automated validation step rather than relying on manual review alone.
 
-## AI-Generated Retention Recommendations — [TODO]
-Example input/output — a sample customer, their risk explanation, and the recommended action.
+**Example outputs:**
+
+> **Customer 5150-ITWWB** (82.8% predicted churn probability)
+> **Explanation:** This customer is on a month-to-month contract, has only 3 months of tenure, and pays a high monthly fee of $94.85 for Fiber optic internet, all of which are strong indicators of a high churn probability. Additionally, the lack of tech support and online security services, combined with payment via electronic check, further increases the likelihood of churn.
+> **Recommended Action:** Offer a discounted 12-month contract with a complimentary tech support add-on to increase perceived value and lock in the customer.
+
+> **Customer 6630-UJZMY** (79.8% predicted churn probability)
+> **Explanation:** The customer is on a month-to-month contract with only 4 months of tenure, high monthly charges, and uses fiber optic internet, which the model identifies as the strongest churn driver. The absence of tech support and online security, along with payment by electronic check, further elevates the churn probability to 79.8%.
+> **Recommended Action:** Offer a discounted 12-month contract that includes complimentary tech support and online security to increase perceived value and lock in the customer.
+
+Full output for all 10 customers: `exports/ai_retention_recommendations.csv`
+
+**Note on this segment:** all 10 highest-risk customers share a near-identical profile — Fiber optic internet, month-to-month contracts, low tenure, and no add-on services — which is why the AI-generated recommendations converge on a similar theme (contract commitment + service bundling). This isn't repetition for its own sake; it reflects a genuine, concentrated risk cluster the model and the AI layer agree on.
+
+**Quality review process:** all 10 generated outputs were manually reviewed against the customer's actual database record to confirm the explanation's cited figures (tenure, monthly charge, contract type) matched the real data before being accepted into the project.

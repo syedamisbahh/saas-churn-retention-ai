@@ -19,11 +19,11 @@
 
 ## 1. Business Problem
 
-SaaS companies lose recurring revenue when at-risk customers churn without warning. Support and Customer Success teams typically identify churn risk reactively — after a customer has already cancelled or stopped engaging — because manual account monitoring cannot scale with the volume of active customers. This results in preventable revenue loss and missed opportunities for timely retention intervention.
+SaaS companies lose recurring revenue when at-risk customers churn without warning. Support and Customer Success teams typically identify churn risk reactively - after a customer has already cancelled or stopped engaging - because manual account monitoring cannot scale with the volume of active customers. This results in preventable revenue loss and missed opportunities for timely retention intervention.
 
 ## 2. Business Objective
 
-Build a system that proactively identifies at-risk customers, quantifies the revenue impact of churn, and recommends specific, actionable retention steps — before a customer cancels, rather than after.
+Build a system that proactively identifies at-risk customers, quantifies the revenue impact of churn, and recommends specific, actionable retention steps - before a customer cancels, rather than after.
 
 ## 3. Scope
 

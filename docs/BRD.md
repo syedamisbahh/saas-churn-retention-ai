@@ -1,9 +1,9 @@
 # Business Requirements Document (BRD)
 ## SaaS Churn Prediction & AI-Driven Retention System
 
-**Document version:** 1.2
+**Document version:** 1.3
 **Author:** Syeda Misbah Hussain
-**Date:** 09/16/2026
+**Date:** 09/23/2026
 **Status:** Draft
 
 ## Revision History
@@ -13,6 +13,7 @@
 | 1.0 | 09/17/2026 | Initial draft — business problem, objectives, scope, and requirements defined |
 | 1.1 | 09/22/2026 | Confirmed FR-04, FR-05, and NFR-01 against the churn prediction model actually built (logistic regression, standardized numeric features, 80/20 train/test split). Added the model's recall limitation to the Risks table. |
 | 1.2 | 09/23/2026 | Confirmed FR-06 and FR-07 as implemented, with the AI explanation/recommendation layer built using the Groq API (openai/gpt-oss-20b). Added a risk noting manual review of AI output does not scale. |
+| 1.3 | 09/23/2026 | Documented end-to-end pipeline sequence and added the process flow diagram (before/after workflow) to project documentation. Added a constraint and risk noting the pipeline is not yet fully automated. |
 
 ---
 
@@ -32,12 +33,14 @@ Build a system that proactively identifies at-risk customers, quantifies the rev
 - A predictive model to flag active customers likely to churn
 - An AI-generated layer that explains each at-risk customer's risk factors and recommends a retention action, in plain business language
 - A dashboard presenting churn KPIs, segmentation, and at-risk customers to a non-technical business stakeholder
+- A process flow diagram illustrating the shift from manual to AI-assisted retention workflow
 
 ### Out of Scope
 - Live integration with a production billing or CRM system
 - Automated execution of retention actions (e.g., auto-sending discount offers)
 - Real-time (streaming) data processing
 - A/B testing of retention strategies
+- Full pipeline orchestration (the current pipeline runs as sequential standalone scripts, not a single automated job)
 
 ## 4. Stakeholders
 
@@ -59,6 +62,7 @@ Build a system that proactively identifies at-risk customers, quantifies the rev
 - No signup/join date is available in the dataset, so true cohort-based retention analysis (tracking a specific monthly cohort over time) is not possible. Tenure-based retention is used as a proxy instead.
 - The predictive model must remain interpretable (e.g., logistic regression or decision tree) rather than a high-complexity black-box model, so that its outputs can be explained in plain language to a business stakeholder.
 - Numeric features used by the model (tenure, monthly charges, total charges) are correlated with one another, which can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
+- The current pipeline (data cleaning → modeling → AI recommendation generation) runs as separate scripts executed in sequence, not a single automated or scheduled job; SQL-based analysis in particular still requires manual execution.
 
 ## 7. Functional Requirements
 
@@ -73,6 +77,7 @@ Build a system that proactively identifies at-risk customers, quantifies the rev
 | FR-07 | The system shall generate a recommended retention action for each at-risk customer, using an AI language model. | Implemented — one specific action generated per customer, alongside the explanation |
 | FR-08 | The system shall present churn KPIs, segmentation breakdowns, and at-risk customers in an interactive dashboard. | Implemented |
 | FR-09 | The dashboard shall allow filtering of results by at least one dimension (e.g., contract type). | Implemented |
+| FR-10 | The system's end-to-end workflow shall be documented with a process flow diagram illustrating the shift from manual to AI-assisted retention. | Implemented — before/after process flow diagram, `docs/process_flow.png` |
 
 ## 8. Non-Functional Requirements
 
@@ -101,6 +106,7 @@ Build a system that proactively identifies at-risk customers, quantifies the rev
 | US-03 | As a Revenue Leader, I want to see total MRR at risk, so that I can quantify the financial impact of churn to leadership. |
 | US-04 | As a Revenue Leader, I want to see which customer segments churn most, so that I can direct retention budget where it matters most. |
 | US-05 | As a Data/Analytics stakeholder, I want the churn model's predictions to be explainable, so that I can trust and validate its recommendations before acting on them. |
+| US-06 | As a new stakeholder unfamiliar with the project, I want a visual illustration of how the workflow changes with this system, so that I can quickly understand its value without reading technical documentation. |
 
 ## 11. Success Criteria
 
@@ -120,3 +126,4 @@ This project will be considered successful if it:
 | Dataset is public and widely used, reducing novelty | Differentiate through the business framing, AI recommendation layer, and business case, rather than the dataset itself |
 | The churn model, as trained, misses roughly 40% of customers who actually churn (recall of 59.8% on held-out test data) | Document this trade-off explicitly; a production deployment prioritizing recall over precision could lower the model's decision threshold, at the cost of more false alarms |
 | Manual review of AI-generated output does not scale beyond a small sample (10 customers) | For a larger customer base, an automated validation step (e.g., programmatically checking that cited figures match the source record) would be needed before trusting AI output at scale |
+| The pipeline is not fully automated — scripts run sequentially and manually, and SQL analysis is not yet callable from a script | Document this as a known limitation; a production version would use a scheduler or orchestration tool to run the pipeline end to end without manual steps |

@@ -59,42 +59,6 @@ Each visualization was chosen based on the type of relationship in the data, not
 
 ---
 
-## Tech Stack
-
-- **Python** (pandas, scikit-learn) — data cleaning and churn prediction model
-- **SQLite** — data storage and querying
-- **Tableau Public** — dashboard and visualization
-- **Groq API** (`openai/gpt-oss-20b`) — AI-generated risk explanations and retention recommendations
-
-## Project Structure
-
-```
-├── sql/                  # Business-question queries
-│   ├── 01_churn_kpis.sql
-│   ├── 02_segmentation.sql
-│   ├── 03_cohort_retention.sql
-│   └── 04_at_risk_customers.sql
-├── exports/              # CSV outputs feeding the dashboard
-│   ├── churn_scores.csv
-│   ├── high_value_at_risk.csv
-│   └── ai_retention_recommendations.csv
-├── dashboard/            # Tableau workbook + screenshot
-│   ├── churn_dashboard.twbx
-│   └── screenshot.png
-├── model/                # Trained model artifact
-│   └── churn_model.pkl
-├── docs/                 # BRD
-│   └── BRD.md
-├── main.py               # Data cleaning & import into SQLite
-├── train_model.py        # Churn prediction model training and evaluation
-├── generate_recommendations.py  # AI-generated risk explanations and retention actions
-├── .env                  # API key storage (not committed — see .gitignore)
-├── requirements.txt
-└── README.md
-```
-
----
-
 ## Churn Prediction Model
 
 A logistic regression model was trained to predict churn probability for each customer, using contract type, tenure, billing, and service-usage features. Logistic regression was chosen specifically for its interpretability - its coefficients directly show which factors increase or decrease churn risk, which the AI explanation layer relies on.
@@ -116,18 +80,29 @@ Top churn-preventing factors: Two-year contract, longer tenure, one-year contrac
 
 These findings are broadly consistent with the SQL-based segmentation analysis above, reinforcing that the model is learning genuine patterns rather than noise. One new finding surfaced by the model - Fiber optic internet service as a top churn driver - led to an additional SQL query (`sql/02_segmentation.sql`) to validate and explain it with real segmentation data.
 
+---
+
+## System Architecture
+
+![Process Flow Diagram](docs/process_flow.png)
+
+The system runs as a sequential pipeline:
+
+1. **Data ingestion & cleaning** (`main.py`) — raw CSV loaded and cleaned into SQLite
+2. **Descriptive analysis** (`sql/*.sql`) — churn KPIs and segmentation, feeding the dashboard
+3. **Predictive modeling** (`train_model.py`) — churn probability scored for every customer
+4. **AI recommendation layer** (`generate_recommendations.py`) — plain-English explanations and retention actions for the highest-risk customers
+5. **Presentation** (Tableau dashboard) — results made accessible to a non-technical stakeholder
+
+The diagram above illustrates how this shifts a Customer Success Manager's workflow from reactive, manual account review (top) to proactive, AI-prioritized outreach (bottom).
+
+**Note:** SQL analysis currently runs as standalone queries rather than being called from an orchestration script — a natural next step toward a fully automated pipeline.
+
+---
+
 ## AI-Generated Retention Recommendations
 
 For each of the top 10 highest-risk active customers (by predicted churn probability), a language model (Groq, `openai/gpt-oss-20b`) generates a plain-English explanation and one specific retention action — grounded strictly in that customer's real data fields, not open-ended generation. The prompt explicitly constrains the model to avoid inventing information and to reference the underlying churn model's top driver (Fiber optic internet service) when applicable, which reduces the risk of generic or hallucinated output.
-
-## Limitations
-
-- Retention-by-tenure is a proxy metric — the dataset has no signup date, so this groups customers by *how long they've been a customer so far* rather than a true monthly cohort curve.
-- Built on a public dataset, not live company data.
-- Churn prediction model is intentionally kept simple and interpretable (logistic regression) rather than a higher-accuracy black-box model, to support the AI explanation layer.
-- Some engineered/raw features (`tenure`, `MonthlyCharges`, `TotalCharges`) are correlated with one another (`TotalCharges` ≈ `tenure` × `MonthlyCharges`), a form of multicollinearity that can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
-- The model currently misses roughly 40% of customers who actually churn (recall of 59.8%) — meaning a real deployment would need either a lower decision threshold or a more sensitive model if minimizing missed at-risk customers is the priority over minimizing false alarms.
-- AI-generated explanations, while grounded in real customer data through prompt constraints, were still manually spot-checked against the database before use - a production deployment would need an automated validation step rather than relying on manual review alone.
 
 **Example outputs:**
 
@@ -144,3 +119,60 @@ Full output for all 10 customers: `exports/ai_retention_recommendations.csv`
 **Note on this segment:** all 10 highest-risk customers share a near-identical profile — Fiber optic internet, month-to-month contracts, low tenure, and no add-on services — which is why the AI-generated recommendations converge on a similar theme (contract commitment + service bundling). This isn't repetition for its own sake; it reflects a genuine, concentrated risk cluster the model and the AI layer agree on.
 
 **Quality review process:** all 10 generated outputs were manually reviewed against the customer's actual database record to confirm the explanation's cited figures (tenure, monthly charge, contract type) matched the real data before being accepted into the project.
+
+## Business Case & Estimated Impact (Day 7) — *[TODO]*
+Projected MRR saved if X% of flagged high-risk customers are retained.
+
+---
+
+## Tech Stack
+
+- **Python** (pandas, scikit-learn) — data cleaning and churn prediction model
+- **SQLite** — data storage and querying
+- **Tableau Public** — dashboard and visualization
+- **Groq API** (`openai/gpt-oss-20b`) — AI-generated risk explanations and retention recommendations
+- **draw.io** — process flow diagram
+
+## Project Structure
+
+```
+├── sql/                  # Business-question queries
+│   ├── 01_churn_kpis.sql
+│   ├── 02_segmentation.sql
+│   ├── 03_cohort_retention.sql
+│   └── 04_at_risk_customers.sql
+├── exports/              # CSV outputs feeding the dashboard and model
+│   ├── churn_scores.csv
+│   ├── high_value_at_risk.csv
+│   └── ai_retention_recommendations.csv
+├── dashboard/            # Tableau workbook + screenshot
+│   ├── churn_dashboard.twbx
+│   └── screenshot.png
+├── model/                # Trained model artifact
+│   └── churn_model.pkl
+├── docs/                 # BRD and process flow diagram
+│   ├── BRD.md
+│   └── process_flow.png
+├── main.py               # Data cleaning & import into SQLite
+├── train_model.py        # Churn prediction model training and evaluation
+├── generate_recommendations.py  # AI-generated risk explanations and retention actions
+├── .env                  # API key storage (not committed — see .gitignore)
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Limitations
+
+- Retention-by-tenure is a proxy metric — the dataset has no signup date, so this groups customers by *how long they've been a customer so far* rather than a true monthly cohort curve.
+- Built on a public dataset, not live company data.
+- Churn prediction model is intentionally kept simple and interpretable (logistic regression) rather than a higher-accuracy black-box model, to support the AI explanation layer.
+- Some engineered/raw features (`tenure`, `MonthlyCharges`, `TotalCharges`) are correlated with one another (`TotalCharges` ≈ `tenure` × `MonthlyCharges`), a form of multicollinearity that can make individual model coefficients less stable to interpret in isolation, even though overall model performance remains valid.
+- The model currently misses roughly 40% of customers who actually churn (recall of 59.8%) — meaning a real deployment would need either a lower decision threshold or a more sensitive model if minimizing missed at-risk customers is the priority over minimizing false alarms.
+- AI-generated explanations, while grounded in real customer data through prompt constraints, were still manually spot-checked against the database before use — a production deployment would need an automated validation step rather than relying on manual review alone.
+- The pipeline (`main.py` → `train_model.py` → `generate_recommendations.py`) runs as separate scripts in sequence rather than a single automated job; SQL analysis in particular still requires manual execution rather than being called programmatically.
+- The process flow diagram illustrates the workflow as a before/after comparison rather than a strict, single-pool BPMN swimlane diagram partitioned by role.
+
+## Demo Walkthrough — *[TODO]*
+2–3 minute video link, added on Day 7.

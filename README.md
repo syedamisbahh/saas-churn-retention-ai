@@ -120,8 +120,22 @@ Full output for all 10 customers: `exports/ai_retention_recommendations.csv`
 
 **Quality review process:** all 10 generated outputs were manually reviewed against the customer's actual database record to confirm the explanation's cited figures (tenure, monthly charge, contract type) matched the real data before being accepted into the project.
 
-## Business Case & Estimated Impact (Day 7) — *[TODO]*
-Projected MRR saved if X% of flagged high-risk customers are retained.
+---
+
+## Business Case & Estimated Impact
+
+Based on the churn prediction model, 519 active customers are currently flagged above a 50% churn probability, representing $41,254.65 in monthly recurring revenue.
+
+Assuming a conservative-to-moderate 20% success rate for proactive retention outreach (informed by the AI-generated, personalized recommendations for each flagged customer), this system could plausibly preserve:
+
+- **Estimated monthly MRR saved:** $8,250.93
+- **Estimated annual impact:** $99,011.16
+
+For reference, at a more conservative 10% retention success rate, the estimated annual impact is $49,505.58; at a more optimistic 30%, it rises to $148,516.74.
+
+*(Note: AI-generated explanations and recommendations were built and validated for the top 10 highest-risk customers as a proof of concept; scaling to all 519 flagged customers would require running the same prompt-based pipeline across the full at-risk population — a straightforward extension of the existing `generate_recommendations.py` script.)*
+
+This is a scenario-based estimate, not a guaranteed outcome — actual retention rates would depend on execution quality, offer relevance, and factors outside the model's scope. It is presented here to illustrate the order of magnitude of value this system could unlock, not as a committed financial projection.
 
 ---
 
@@ -156,6 +170,7 @@ Projected MRR saved if X% of flagged high-risk customers are retained.
 ├── main.py               # Data cleaning & import into SQLite
 ├── train_model.py        # Churn prediction model training and evaluation
 ├── generate_recommendations.py  # AI-generated risk explanations and retention actions
+├── business_case.py      # Business case calculation (at-risk MRR, scenario-based savings)
 ├── .env                  # API key storage (not committed — see .gitignore)
 ├── requirements.txt
 └── README.md
@@ -173,6 +188,5 @@ Projected MRR saved if X% of flagged high-risk customers are retained.
 - AI-generated explanations, while grounded in real customer data through prompt constraints, were still manually spot-checked against the database before use — a production deployment would need an automated validation step rather than relying on manual review alone.
 - The pipeline (`main.py` → `train_model.py` → `generate_recommendations.py`) runs as separate scripts in sequence rather than a single automated job; SQL analysis in particular still requires manual execution rather than being called programmatically.
 - The process flow diagram illustrates the workflow as a before/after comparison rather than a strict, single-pool BPMN swimlane diagram partitioned by role.
-
-## Demo Walkthrough — *[TODO]*
-2–3 minute video link, added on Day 7.
+- The business case is a scenario-based estimate built on assumed retention success rates (10%/20%/30%), not a measured or guaranteed financial outcome.
+- AI-generated recommendations currently cover only the top 10 highest-risk customers as a proof of concept, not the full 519-customer at-risk population identified by the model.

@@ -43,7 +43,7 @@ Source: [Kaggle — Telco Customer Churn](https://www.kaggle.com/datasets/blastc
 
 ![Dashboard Screenshot](dashboard/Screenshot.png)
 
-**[View Interactive Dashboard on Tableau Public →](https://public.tableau.com/shared/3G64JYXZ8?:display_count=n&:origin=viz_share_link)**
+**[View Interactive Dashboard on Tableau Public →](https://public.tableau.com/app/profile/syeda.misbah.hussain./viz/Book1_17898348248600/Dashboard1)**
 
 ### Chart Selection Rationale
 
